@@ -1,0 +1,45 @@
+<?php
+/**
+ * is $distinationPath is empty then it will delete all the file else it move duplicate file at your distination path
+ * if $recursiveCheck is true then it will check inside folder file also else it wil only check current dir and skip child or inner dir. 
+ */
+function removeDuplicateFiles($dirName=array(),$distinationDirPath='',$recursiveCheck=false, $skipFilesExtenion=array()){
+    ini_set('max_execution_time', 0); // 0 = Unlimited
+    $checksums = $moveFileNames = array();
+    $distination_path = "";
+    if(empty($skipFilesExtenion)){
+        $skipFilesExtenion = array("mp4","MOV");
+    }
+    $skipFilesExtenion = array_map('strtolower', $skipFilesExtenion);
+    foreach ($dirName as $source_path) {
+        if(in_array(pathinfo($source_path,PATHINFO_EXTENSION),$skipFilesExtenion)) continue;
+        if(!is_dir($distinationDirPath) && !is_file($distinationDirPath)){
+            mkdir($distinationDirPath,0777,true);
+        }
+        $distination_path = $distinationDirPath.basename($source_path);
+        // skip directories
+        if(is_dir($source_path) && $recursiveCheck===true){
+            removeDuplicateFiles(glob($source_path."/*"),$distination_path."/",true);
+        }else{
+            $hash = sha1_file($source_path);
+            // delete duplicate
+            if (in_array($hash, $checksums)) {
+                if($distinationDirPath==''){
+                    unlink($source_path);
+                }else{
+                    if(rename($source_path,$distination_path)){
+                        $moveFileNames[] = $distination_path;
+                        echo "File move $distination_path <br/>";
+                    }
+                }
+            }else {// add hash to list
+                $checksums[] = $hash;
+            }
+        } 
+    }
+    return $moveFileNames;
+}
+$dir = "M:/Mayank singh/";
+$move_duplicate_files_folder = "M:/Duplicate_files/";
+removeDuplicateFiles(glob($dir."*"),$move_duplicate_files_folder);
+?>
